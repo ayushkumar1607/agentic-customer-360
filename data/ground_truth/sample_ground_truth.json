@@ -1,0 +1,38 @@
+{
+  "scenario_01": {
+    "customer_id": "CUST_00088",
+    "checkpoints": [
+      {
+        "as_of_time": "2026-04-15T21:31:00Z",
+        "expected_state": "medical_hardship",
+        "expected_action": "relationship_manager_escalation",
+        "expected_hitl": "escalated",
+        "rationale": "Support ticket explicitly mentions hospitalization and income drop; sensitive inference mandates human review before customer contact."
+      }
+    ]
+  },
+  "scenario_02": {
+    "customer_id": "CUST_00105",
+    "checkpoints": [
+      {
+        "as_of_time": "2026-04-15T21:47:00Z",
+        "expected_state": "new_child_life_event",
+        "expected_action": "relationship_manager_escalation",
+        "expected_hitl": "escalated",
+        "rationale": "Dependents change + healthcare/pharmacy spend; sensitive life event requires human outreach per POL-HITL-002."
+      }
+    ]
+  },
+  "scenario_03": {
+    "customer_id": "CUST_00184",
+    "checkpoints": [
+      {
+        "as_of_time": "2026-04-03T09:15:00Z",
+        "expected_state": "no_significant_event",
+        "expected_action": "no_action",
+        "expected_hitl": "auto_approved",
+        "rationale": "No signals cross threshold; explicit No Action is the correct terminal state."
+      }
+    ]
+  }
+}

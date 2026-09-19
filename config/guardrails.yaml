@@ -1,0 +1,105 @@
+version: 1
+
+hard_stops:
+
+  legal_threat:
+    description: "Customer mentions legal action, attorney, or litigation."
+    match_any:
+      - "lawsuit"
+      - "legal action"
+      - "attorney"
+      - "my lawyer"
+      - "litigation"
+      - "sue you"
+      - "suing"
+      - "class action"
+      - "cease and desist"
+    scan_fields:
+      - "raw_text"
+      - "transcript"
+      - "message"
+      - "notes"
+    route: "legal_escalation"
+    terminal_action: "compliance_fraud_hold"
+    hitl_required: true
+    reason: "Legal threat detected. Autonomous outbound communication halted."
+
+  self_harm:
+    description: "Customer expresses self-harm or suicidal ideation."
+    match_any:
+      - "suicide"
+      - "kill myself"
+      - "end my life"
+      - "self harm"
+      - "self-harm"
+      - "hurt myself"
+      - "don't want to live"
+    scan_fields:
+      - "raw_text"
+      - "transcript"
+      - "message"
+      - "notes"
+    route: "crisis_escalation"
+    terminal_action: "relationship_manager_escalation"
+    hitl_required: true
+    reason: "Self-harm signal detected. Immediate human escalation."
+
+  sanctions_hit:
+    description: "Sanctions / watchlist match flagged upstream."
+    match_any:
+      - "sanctions match"
+      - "sanctions hit"
+      - "ofac match"
+      - "watchlist match"
+    scan_fields:
+      - "notes"
+      - "event_subtype"
+      - "reason"
+    route: "compliance_escalation"
+    terminal_action: "compliance_fraud_hold"
+    hitl_required: true
+    reason: "Sanctions match requires compliance review."
+
+  account_takeover:
+    description: "Signals consistent with account takeover / unauthorized access."
+    match_any:
+      - "unauthorized access"
+      - "account takeover"
+      - "i did not authorize"
+      - "not me"
+      - "someone accessed my account"
+      - "my account was hacked"
+    scan_fields:
+      - "raw_text"
+      - "transcript"
+      - "message"
+    route: "fraud_escalation"
+    terminal_action: "compliance_fraud_hold"
+    hitl_required: true
+    reason: "Potential account takeover. Hold placed pending human review."
+
+soft_signals:
+
+  fraud_keywords:
+    - "fraud"
+    - "scam"
+    - "stolen"
+    - "unauthorized charge"
+    - "phishing"
+
+  vulnerability_keywords:
+    - "elderly"
+    - "confused"
+    - "scam call"
+    - "gift card"
+
+pii_fields:
+  - "customer_id"
+  - "account_id"
+  - "name"
+  - "household_id"
+  - "email"
+  - "phone"
+  - "ssn"
+  - "national_id"
+  - "address"

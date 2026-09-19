@@ -1,0 +1,61 @@
+# =============================================================================
+# Agentic Customer 360 — Git ignore rules
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment & secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Data — do NOT commit raw streams (large, may contain PII)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/
+data/chroma/
+
+# Outputs — regenerated on every pipeline run
+output/*.jsonl
+output/*.json
+!output/.gitkeep
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Mermaid CLI temp files
+diagrams/*.png.tmp
+diagrams/config.json
+
+# Jupyter
+.ipynb_checkpoints/

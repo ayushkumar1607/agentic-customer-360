@@ -1,0 +1,48 @@
+# Agent registry. Drives model selection, RBAC role, and orchestration stage.
+agents:
+  usage_agent:
+    role: usage_agent
+    stage: signal_gathering
+    model: fast
+  support_agent:
+    role: support_agent
+    stage: signal_gathering
+    model: fast
+  transaction_agent:
+    role: transaction_agent
+    stage: signal_gathering
+    model: fast
+  kyc_agent:
+    role: kyc_agent
+    stage: signal_gathering
+    model: fast
+  life_event_agent:
+    role: life_event_agent
+    stage: life_event
+    model: reason
+  synthesis_agent:
+    role: synthesis_agent
+    stage: synthesis
+    model: reason
+  debate_retention:
+    role: synthesis_agent      # same RBAC, different persona
+    stage: debate
+    model: reason
+  debate_growth:
+    role: synthesis_agent
+    stage: debate
+    model: alt                 # forces genuine divergence
+  judge_agent:
+    role: judge_agent
+    stage: debate
+    model: reason
+    temperature: 0.0
+  action_agent:
+    role: action_agent
+    stage: action
+    model: reason
+  critique_agent:
+    role: critique_agent
+    stage: critique
+    model: reason
+    temperature: 0.0

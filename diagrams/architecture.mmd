@@ -1,0 +1,141 @@
+flowchart TB
+    %% ===== DATA SOURCES =====
+    subgraph SRC["Data Sources (per scenario)"]
+        direction LR
+        S1[entities.json<br/>customer profile]
+        S2[history_seed.jsonl<br/>baseline history]
+        S3[live_stream.jsonl<br/>live events]
+    end
+
+    %% ===== SYNC FAST PATH =====
+    subgraph SYNC["SYNCHRONOUS FAST PATH (per-event)"]
+        direction TB
+        ING[/Incoming Event/]
+        PII[PII Tokenizer<br/>src/guardrails/pii.py]
+        GR[Deterministic Guardrail Scanner<br/>src/guardrails/scanner.py<br/>rules: config/guardrails.yaml]
+        HS{{Hard Stop?}}
+        ESC[HITL / Legal / Crisis Queue]
+        SAFE[/Safe Event/]
+
+        ING --> PII --> GR --> HS
+        HS -- yes --> ESC
+        HS -- no --> SAFE
+    end
+
+    %% ===== CEP =====
+    subgraph CEP_LAYER["CEP Layer (async)"]
+        direction TB
+        CEP[CEP Engine<br/>src/streaming/cep_engine.py<br/>rolling windows: 1h / 24h / 7d / 30d]
+        FEAT[Feature Extractor<br/>src/streaming/features.py<br/>login_trend, spend_variance, sentiment]
+        CEP --> FEAT
+    end
+
+    %% ===== MEMORY =====
+    subgraph MEM["Governed Tripartite Memory"]
+        direction TB
+        WM[Working Memory<br/>per-case, transient]
+        EM[Episodic Memory<br/>per-customer, decay-weighted<br/>src/memory/episodic_memory.py]
+        SM[Semantic Memory<br/>ChromaDB policies<br/>src/memory/semantic_memory.py]
+        SB[(State Board<br/>per-customer, governed<br/>src/memory/state_board.py)]
+    end
+
+    %% ===== SWARM =====
+    subgraph SWARM["Swarm Agents (parallel, fast tier)"]
+        direction LR
+        U[Usage Agent<br/>src/agents/usage_agent.py<br/>RBAC: web_app_events]
+        SU[Support Agent<br/>src/agents/support_agent.py<br/>RBAC: support_logs]
+        T[Transaction Agent<br/>src/agents/transaction_agent.py<br/>RBAC: card/ledger/wire]
+        K[KYC Agent<br/>src/agents/kyc_agent.py<br/>RBAC: loan_kyc]
+    end
+
+    %% ===== LIFE-EVENT TRIGGER =====
+    LE_TRIG{{Agent-dependent trigger<br/>≥2 agents flagged?}}
+    LE[Life-Event Inference Agent<br/>src/agents/life_event_agent.py<br/>reason tier]
+
+    %% ===== SYNTHESIS + DEBATE =====
+    SYN[Synthesis Agent<br/>src/agents/synthesis_agent.py<br/>reason tier]
+    ARB{{Genuine conflict?}}
+    DR[Retention Debate Persona<br/>reason tier]
+    DG[Growth Debate Persona<br/>alt tier]
+    J[Judge Agent<br/>temperature 0]
+
+    %% ===== NO ACTION GATE =====
+    NAG{{No Action Gate<br/>deterministic<br/>src/orchestration/no_action_gate.py}}
+    NOACT([NO_ACTION checkpoint])
+
+    %% ===== ACTION =====
+    RET[Semantic Policy Retrieval<br/>+ Episodic Recall]
+    AA[Action Agent<br/>src/agents/action_agent.py<br/>bounded set of 6 actions]
+    SENS{{Sensitive inference?<br/>deterministic override}}
+    FORCE[Force RM escalation]
+    CA[Critique Agent<br/>src/agents/critique_agent.py<br/>max 2 iterations]
+    REFINE{{Verdict}}
+    GR2[Guardrail Override on Message]
+    HITL_REQ{{HITL required?}}
+    HQ[(HITL Queue<br/>async)]
+    HUMAN[/Human reviewer/]
+
+    %% ===== OUTPUT =====
+    OUT[/inferred-events.jsonl<br/>+ inferred-events.json/]
+
+    %% ===== WIRING =====
+    S1 -.-> SB
+    S2 -.-> EM
+    S3 -.-> ING
+
+    SAFE --> CEP
+    FEAT --> SWARM
+    FEAT --> LE
+    SB -.-> U
+    SB -.-> SU
+    SB -.-> T
+    SB -.-> K
+    U --> SB
+    SU --> SB
+    T --> SB
+    K --> SB
+
+    SB --> LE_TRIG
+    LE_TRIG -- yes --> LE
+    LE_TRIG -- no --> SYN
+    LE --> SB
+
+    SB --> SYN
+    SYN --> ARB
+    ARB -- yes --> DR
+    ARB -- yes --> DG
+    DR --> J
+    DG --> J
+    J --> NAG
+    ARB -- no --> NAG
+
+    NAG -- fire --> NOACT
+    NAG -- pass --> RET
+    RET --> AA
+    AA --> SENS
+    SENS -- yes --> FORCE
+    SENS -- no --> CA
+    FORCE --> HITL_REQ
+    CA --> REFINE
+    REFINE -- pass --> HITL_REQ
+    REFINE -- revise --> AA
+    REFINE -- reject --> FORCE
+    HITL_REQ -- yes --> HQ
+    HQ --> HUMAN
+    HUMAN --> OUT
+    HITL_REQ -- no --> GR2
+    GR2 --> OUT
+    NOACT --> OUT
+
+    %% ===== STYLING =====
+    classDef sync fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    classDef async fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    classDef det fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#bf360c
+    classDef out fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    classDef term fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+
+    class ING,PII,GR,HS,ESC,SAFE sync
+    class CEP,FEAT,WM,EM,SM,SB,U,SU,T,K,LE,SYN,DR,DG,J,RET,AA,CA,FORCE,GR2 async
+    class NAG,SENS,REFINE,LE_TRIG,ARB,HITL_REQ det
+    class OUT out
+    class NOACT,ESC,HUMAN term

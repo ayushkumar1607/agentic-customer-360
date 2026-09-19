@@ -1,0 +1,37 @@
+# Core
+python-dotenv
+pydantic>=2.0
+pydantic-settings
+
+# Async & Streaming
+aiohttp
+asyncio
+websockets
+
+# LLM & Embeddings
+groq
+langchain-groq
+sentence-transformers
+huggingface-hub
+
+# Vector DB & Retrieval
+chromadb
+
+# Data Processing
+pandas
+numpy
+scipy
+
+# HITL UI
+streamlit
+
+# Observability & Logging
+structlog
+rich
+
+# Testing
+pytest
+pytest-asyncio
+
+# Optional local LLM
+# ollama
