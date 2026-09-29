@@ -232,7 +232,27 @@ async def _run_swarm(
         TransactionAgent(state_board=board, pii=pii),
         KYCAgent(state_board=board, pii=pii),
     ]
-    log.info("stage.swarm.start")
+    log.info("stage.swarm.start", mode="sequential_throttled")
+
+    # Sequential + throttled to stay within Groq free-tier TPM (8000 tokens/min).
+    # Each swarm agent sends 700–3400 prompt tokens; running them back-to-back
+    # exceeds the per-minute budget. A 20s gap between calls gives Groq's token
+    # window time to refill. On a paid tier this loop could be replaced with
+    # asyncio.gather for parallelism.
+    AGENT_GAP_SECONDS = 30
+
+    for i, a in enumerate(agents):
+        try:
+            await a.run(customer_id=customer_id, events=events, extra_context=ctx)
+        except Exception as e:
+            log.error("stage.swarm.failed", agent=a.name, error=str(e))
+        if i < len(agents) - 1:
+            log.info("stage.swarm.throttle",
+                     next_agent=agents[i + 1].name,
+                     sleep_s=AGENT_GAP_SECONDS)
+            await asyncio.sleep(AGENT_GAP_SECONDS)
+
+    log.info("stage.swarm.done")
 
     async def _run(a):
         try:

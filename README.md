@@ -25,6 +25,11 @@ KYC updates), the system:
 
 ---
 
+> **Runtime:** On Groq's free tier, each scenario takes ~2–4 minutes because
+> agent calls are serialized to respect the 8,000 tokens-per-minute cap. The
+> pipeline handles rate limits automatically. On a paid tier or with local
+> inference, calls parallelize and each scenario completes in ~30 seconds.
+
 ## Quick Start
 
 ### 1. Prerequisites
